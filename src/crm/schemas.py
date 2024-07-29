@@ -1,4 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr
+from src.auth.schemas import UserSchema
+from datetime import datetime
 
 
 class ClientCreateSchema(BaseModel):
@@ -12,3 +14,16 @@ class ClientSchema(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+
+
+class InjuryBaseSchema(BaseModel):
+    message: str
+    client_id: int
+
+
+class InjurySchema(InjuryBaseSchema):
+    id: int
+    created_at: datetime
+    updated_at: datetime | None = None
+    client: ClientSchema
+    user: UserSchema | None = None
