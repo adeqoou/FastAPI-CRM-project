@@ -1,5 +1,4 @@
 from passlib.context import CryptContext
-from fastapi import HTTPException
 from datetime import datetime, timedelta, timezone
 import jwt
 
@@ -45,7 +44,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-def decode_access_token(token: str, credentials_exception: HTTPException):
+def decode_access_token(token: str, credentials_exception):
     try:
         public_key = auth_config.auth_jwt.public_key_path.read_text()
         algorithm = auth_config.auth_jwt.algorithm

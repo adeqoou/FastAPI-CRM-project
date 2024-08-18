@@ -27,3 +27,9 @@ class InjurySchema(InjuryBaseSchema):
     updated_at: datetime | None = None
     client: ClientSchema
     user: UserSchema | None = None
+
+
+class EmailSchema(BaseModel):
+    email: str = EmailStr
+    subject: str
+    message: str

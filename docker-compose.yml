@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  redis_broker:
+    image: redis
+    ports:
+      - 6379:6379
+
+  fastapi_proj:
+    build: .
+    command: uvicorn src.main:app --host=0.0.0.0 --port=8000
+    ports:
+      - 8000:8000
+    depends_on:
+      - redis_broker
+
+    environment:
+      - CELERY_BROKER_URL=redis://redis_broker:6379/0
+      - CELERY_RESULT_URL=redis://redis_broker:6379/0
+
+  celery_container:
+    build: .
+    command: celery -A src.celery worker --loglevel=info
+    depends_on:
+     - redis_broker
+     - fastapi_proj
+    environment:
+      - CELERY_BROKER_URL=redis://redis_broker:6379/0
+      - CELERY_RESULT_URL=redis://redis_broker:6379/0
+
+  flower_container:
+    build: .
+    command: celery -A src.celery flower
+    ports:
+      - 5555:5555
+    depends_on:
+     - redis_broker
+     - fastapi_proj
+     - celery_container
+
+
+

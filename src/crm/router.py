@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List
 from fastapi_cache.decorator import cache
+from .tasks import send_mail
 
 router = APIRouter()
 
@@ -72,3 +73,24 @@ async def injuries_list(client_id: int, db: AsyncSession = Depends(get_db)):
         return result
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post('/contacts-email-send/')
+async def email_send(email: EmailSchema, db: AsyncSession = Depends(get_db)):
+    try:
+        send_mail(email.email, email.subject, email.message)
+        contact = Contacts(email=email.email)
+        db.add(contact)
+        await db.commit()
+        await db.refresh(contact)
+        return contact
+    except:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Данный аккаунт уже существует')
+
+
+@router.get('/paginate-injuries/', response_model=List[ClientSchema])
+async def paginate_injuries(start: int = 0, limit: int = 2, db: AsyncSession = Depends(get_db)):
+    clients = await db.execute(select(Clients).offset(start).limit(limit))
+    result = clients.scalars().all()
+    return result

@@ -89,3 +89,10 @@ class Injury(Base):
     user = relationship('User', back_populates='injury')
     client = relationship('Clients', back_populates='injury')
 
+
+class Contacts(Base):
+    __tablename__ = 'contacts'
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    email = Column(String, unique=True)
+

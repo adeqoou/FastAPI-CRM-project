@@ -5,12 +5,11 @@ from src.auth.utils import hash_password, authenticate_user, create_access_token
 from .schemas import *
 from .models import User
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import select, update
 from datetime import timedelta
 from src.auth.config import auth_config
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -42,6 +41,7 @@ async def login_for_access_token(
         db: AsyncSession = Depends(get_db)
 ):
     user = await authenticate_user(db, form_data.username, form_data.password)
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -71,7 +71,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         raise credentials_exceptions
 
     result = await db.execute(select(User).where(User.username == token_data.username))
-    user = result.scalars.first()
+    user = result.scalars().first()
+
     if user is None:
         raise credentials_exceptions
     return user
@@ -81,3 +82,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 @router.get('/profile/', response_model=UserSchema)
 async def users_profile(current_user: UserSchema = Depends(get_current_user)):
     return current_user
+
+
+@router.put('/profile-change/')
+async def change_profile(user_id: int, update_schema: UserSchema, db: AsyncSession = Depends(get_db)):
+    query = (
+        update(User).where(User.id == user_id)
+        .values(**update_schema).execution_options(syncronize_session='fetch')
+    )
+    await db.execute(query)
+
+    updated_profile = await db.execute(select(User).where(User.id == user_id))
+    user = updated_profile.scalars().one_or_none()
+
+    await db.commit()
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    return user
