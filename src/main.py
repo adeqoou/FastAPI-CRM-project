@@ -8,6 +8,7 @@ from src.admin import init_admin
 from fastapi_cache import FastAPICache
 from redis import asyncio as aioredis
 from fastapi_cache.backends.redis import RedisBackend
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -16,6 +17,18 @@ app.include_router(crm_router.router, prefix='/api/v1')
 app.include_router(chat_router.router)
 
 init_admin(app)
+
+origins = [
+    'http://localhost:3000'
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*']
+)
 
 
 @app.on_event('startup')
@@ -26,3 +39,4 @@ async def startup():
 
 if __name__ == '__main__':
     uvicorn.run(app, host='127.0.0.1', port=8000)
+

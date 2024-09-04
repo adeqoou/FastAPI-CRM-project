@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, condecimal
 from src.auth.schemas import UserSchema
 from datetime import datetime
 
@@ -33,3 +33,10 @@ class EmailSchema(BaseModel):
     email: str = EmailStr
     subject: str
     message: str
+
+
+class PropertySchema(BaseModel):
+    id: int
+    address: str | None
+    city: str | None
+    price: condecimal(max_digits=10, decimal_places=2) | None

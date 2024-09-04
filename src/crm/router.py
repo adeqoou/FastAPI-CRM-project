@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from .schemas import *
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_db
@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from typing import List
 from fastapi_cache.decorator import cache
 from .tasks import send_mail
+from decimal import Decimal
 
 router = APIRouter()
 
@@ -89,8 +90,33 @@ async def email_send(email: EmailSchema, db: AsyncSession = Depends(get_db)):
                             detail='Данный аккаунт уже существует')
 
 
+# pagination
 @router.get('/paginate-injuries/', response_model=List[ClientSchema])
 async def paginate_injuries(start: int = 0, limit: int = 2, db: AsyncSession = Depends(get_db)):
     clients = await db.execute(select(Clients).offset(start).limit(limit))
     result = clients.scalars().all()
+    return result
+
+
+# filtration
+@router.get('/property-filter/', response_model=List[PropertySchema])
+async def filter_property(
+        address: str = Query(None),
+        city: str = Query(None),
+        price: Decimal = Query(None),
+        db: AsyncSession = Depends(get_db)):
+    query = select(Property)
+
+    if address:
+        query = query.where(Property.address == address)
+    if city:
+        query = query.where(Property.city == city)
+    if price:
+        query = query.where(Property.price >= price)
+
+    properties = await db.execute(query)
+    result = properties.scalars().all()
+
+    if not result:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
     return result
